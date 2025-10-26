@@ -6,3 +6,8 @@ gcloud==0.18.3
 requests==2.31.0
 requests-toolbelt==0.10.1
 setuptools>=65.5.0,<70.0
+python-dotenv==1.0.1
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.2.0
+matplotlib>=3.7.0
