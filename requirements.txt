@@ -5,5 +5,4 @@ python-jwt==4.1.0
 gcloud==0.18.3
 requests==2.31.0
 requests-toolbelt==0.10.1
-
-
+setuptools>=65.5.0,<70.0
