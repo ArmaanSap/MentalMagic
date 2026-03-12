@@ -1188,6 +1188,7 @@ def show_main_app():
 
 def main():
     st.markdown("""
+    <meta name="google-site-verification" content="u1JrKrjlembDn6YYN9ZENcIklcU16MuwvOPXowPoRmo" />
     <style>
     .chat-message {
         margin: 10px 0;
@@ -1226,4 +1227,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
