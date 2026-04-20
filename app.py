@@ -1204,17 +1204,6 @@ def main():
         margin-left: auto;
         text-align: right;
     }
-
-    .therapist-message {
-        background-color: #f0f2f6;
-        color: black;
-        margin-right: auto;
-        text-align: left;
-    }
-
-    .stTextArea textarea {
-        font-size: 16px;
-    }
     </style>
     """, unsafe_allow_html=True)
 
