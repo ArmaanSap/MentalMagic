@@ -200,12 +200,12 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.title("Welcome to :rainbow[Mental Magic!] 🧠")
+        st.title("Welcome to :rainbow[Mental Magic!] ")
         st.markdown("*Your safe space for mental wellness tracking*")
 
         # Important disclaimers
         st.warning("""
-        ⚠️ **IMPORTANT DISCLAIMER**
+         **IMPORTANT DISCLAIMER**
 
         This app is a **wellness tracking tool only** and is NOT:
         - A substitute for professional medical advice, diagnosis, or treatment
@@ -213,10 +213,10 @@ def show_login_page():
         - Intended to diagnose, treat, cure, or prevent any mental health condition
 
         **If you are experiencing a mental health crisis, please:**
-        - 🆘 Call 988 (Suicide & Crisis Lifeline) in the US
-        - 📞 Contact your local emergency services (911)
-        - 🏥 Visit your nearest emergency room
-        - 👨‍⚕️ Consult with a licensed mental health professional
+        -  Call 988 (Suicide & Crisis Lifeline) in the US
+        -  Contact your local emergency services (911)
+        -  Visit your nearest emergency room
+        -  Consult with a licensed mental health professional
 
         By using this app, you acknowledge that it is for personal wellness tracking only.
         """)
@@ -335,24 +335,24 @@ def show_home_page():
         if feeling_text.strip():
             success, entry_id = save_mood_entry(user_uid, happiness, feeling_text)
             if success:
-                st.success("✅ Check-in saved successfully!")
+                st.success("Check-in saved successfully!")
                 st.balloons()
                 st.rerun()
         else:
-            st.warning("⚠️ Please share what's on your mind before saving.")
+            st.warning("Please share what's on your mind before saving!!!!")
 
     if data:
         st.divider()
-        st.subheader("📜 Recent Check-ins")
+        st.subheader("Recent Check-ins")
 
         recent_entries = data[:3]
         for entry in recent_entries:
             with st.expander(f"📅 {entry['date']} at {entry['time']} - Mood: {entry['happiness_level']}/10"):
                 st.markdown(f"**💭 You said:** {entry['feeling_text']}")
                 if entry.get('summary'):
-                    st.markdown(f"**🤖 AI Summary:** {entry['summary']}")
+                    st.markdown(f"**AI Summary:** {entry['summary']}")
                 if entry.get('recommendation'):
-                    st.markdown(f"**💡 Suggestion:** {entry['recommendation']}")
+                    st.markdown(f"**Suggestion:** {entry['recommendation']}")
 
         if len(data) > 3:
             st.info(f"📊 View all {len(data)} check-ins in the Mood Tracking section")
@@ -370,10 +370,10 @@ def show_mood_tracking_page():
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        date_range = st.selectbox("📅 Time Range",
+        date_range = st.selectbox("Time Range",
                                   ["All Time", "Last 7 Days", "Last 30 Days", "Last 90 Days"])
     with col2:
-        mood_filter = st.selectbox("😊 Mood Filter",
+        mood_filter = st.selectbox(" Mood Filter",
                                    ["All Moods", "High (7-10)", "Medium (4-6)", "Low (1-3)"])
     with col3:
         sort_order = st.selectbox("📈 Sort Order", ["Newest First", "Oldest First"])
