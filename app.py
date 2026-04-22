@@ -22,7 +22,8 @@ pyrebase_auth = firebase.auth()
 
 try:
     if not firebase_admin._apps:
-        cred = credentials.Certificate('serviceAccountKey.json')
+        service_account_info = json.loads(os.environ.get("FIREBASE_SERVICE_ACCOUNT"))
+        cred = credentials.Certificate(service_account_info)
         firebase_admin.initialize_app(cred)
 except Exception as e:
     st.error(f"Failed to initialize Firebase Admin SDK: {e}")
