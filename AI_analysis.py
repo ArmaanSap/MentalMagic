@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 from dotenv import load_dotenv
 import os
 
@@ -36,7 +37,7 @@ def ask_gemini(prompt):
         print("❌ GEMINI_API_KEY is None or empty")
         return None
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -46,16 +47,23 @@ def ask_gemini(prompt):
         }
     }
 
-    response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload)
-    
-    print(f"Gemini status: {response.status_code}")
-    print(f"Gemini response: {response.text[:500]}")
+    for attempt in range(3):  # retry up to 3 times
+        response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload)
+        
+        print(f"Gemini status: {response.status_code}")
+        print(f"Gemini response: {response.text[:500]}")
 
-    if response.status_code == 200:
-        return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
-    else:
-        print(f"Gemini API Error: {response.status_code} - {response.text}")
-        return None
+        if response.status_code == 200:
+            return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+        elif response.status_code == 503:
+            print(f"Gemini overloaded, retrying in 3s... (attempt {attempt + 1}/3)")
+            time.sleep(3)
+        else:
+            print(f"Gemini API Error: {response.status_code} - {response.text}")
+            return None
+
+    print("Gemini failed after 3 attempts")
+    return None
 
 
 def analyze_checkin(happiness_level, feeling_text):
