@@ -4,6 +4,7 @@ from firebase_admin import credentials, auth, firestore
 import pyrebase
 import json
 import time
+import os
 from datetime import datetime, timedelta
 from AI_analysis import analyze_checkin, analyze_stability
 
