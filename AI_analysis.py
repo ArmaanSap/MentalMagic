@@ -61,7 +61,7 @@ def ask_gemini(prompt):
 def analyze_checkin(happiness_level, feeling_text):
     """Analyze mood using free Hugging Face models"""
 
-    sentiment_url = "https://router.huggingface.co/hf-inference/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+    sentiment_url = "https://router.huggingface.co/hf-inference/models/j-hartmann/emotion-english-distilroberta-base"
 
     # Get sentiment from Hugging Face
     sentiment_result = query_hf_api(sentiment_url, feeling_text)
