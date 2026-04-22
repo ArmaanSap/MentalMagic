@@ -6,7 +6,7 @@ import os
 load_dotenv()
 
 HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
 
 def query_hf_api(model_url, text):
