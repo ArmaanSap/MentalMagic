@@ -5,26 +5,37 @@ import os
 
 load_dotenv()
 
-HF_API_KEY = os.getenv("HUGGING_FACE_API_KEY")
+HF_API_KEY = os.environ.get("HUGGING_FACE_API_KEY")
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
 
 def query_hf_api(model_url, text):
     """Simple function to call Hugging Face API"""
+    if not HF_API_KEY:
+        print("❌ HF_API_KEY is None or empty")
+        return None
+        
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     data = {"inputs": text}
 
     response = requests.post(model_url, headers=headers, json=data)
+    
+    print(f"HF status: {response.status_code}")
+    print(f"HF response: {response.text[:300]}")
 
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"API Error: {response.status_code}")
+        print(f"HF API Error: {response.status_code} - {response.text}")
         return None
 
 
 def ask_gemini(prompt):
     """Call Gemini API"""
+    if not GEMINI_API_KEY:
+        print("❌ GEMINI_API_KEY is None or empty")
+        return None
+        
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
@@ -36,11 +47,14 @@ def ask_gemini(prompt):
     }
 
     response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload)
+    
+    print(f"Gemini status: {response.status_code}")
+    print(f"Gemini response: {response.text[:500]}")
 
     if response.status_code == 200:
         return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
     else:
-        print(f"Gemini API Error: {response.status_code}")
+        print(f"Gemini API Error: {response.status_code} - {response.text}")
         return None
 
 
