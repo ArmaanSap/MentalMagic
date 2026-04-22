@@ -1,13 +1,13 @@
 import requests
 import json
-import time
-from dotenv import load_dotenv
 import os
+import anthropic
+from dotenv import load_dotenv
 
 load_dotenv()
 
 HF_API_KEY = os.environ.get("HUGGING_FACE_API_KEY")
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 
 def query_hf_api(model_url, text):
@@ -15,12 +15,12 @@ def query_hf_api(model_url, text):
     if not HF_API_KEY:
         print("❌ HF_API_KEY is None or empty")
         return None
-        
+
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     data = {"inputs": text}
 
     response = requests.post(model_url, headers=headers, json=data)
-    
+
     print(f"HF status: {response.status_code}")
     print(f"HF response: {response.text[:300]}")
 
@@ -31,47 +31,28 @@ def query_hf_api(model_url, text):
         return None
 
 
-def ask_gemini(prompt):
-    """Call Gemini API"""
-    if not GEMINI_API_KEY:
-        print("❌ GEMINI_API_KEY is None or empty")
+def ask_claude(prompt):
+    """Call Claude API"""
+    if not ANTHROPIC_API_KEY:
+        print("❌ ANTHROPIC_API_KEY is None or empty")
         return None
-        
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key={GEMINI_API_KEY}"
 
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.8,
-            "maxOutputTokens": 400
-        }
-    }
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-    for attempt in range(3):  # retry up to 3 times
-        response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload)
-        
-        print(f"Gemini status: {response.status_code}")
-        print(f"Gemini response: {response.text[:500]}")
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=400,
+        messages=[{"role": "user", "content": prompt}]
+    )
 
-        if response.status_code == 200:
-            return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
-        elif response.status_code == 503:
-            print(f"Gemini overloaded, retrying in 3s... (attempt {attempt + 1}/3)")
-            time.sleep(3)
-        else:
-            print(f"Gemini API Error: {response.status_code} - {response.text}")
-            return None
-
-    print("Gemini failed after 3 attempts")
-    return None
+    return message.content[0].text.strip()
 
 
 def analyze_checkin(happiness_level, feeling_text):
-    """Analyze mood using free Hugging Face models"""
+    """Analyze mood using Hugging Face emotion model + Claude"""
 
     sentiment_url = "https://router.huggingface.co/hf-inference/models/j-hartmann/emotion-english-distilroberta-base"
 
-    # Get sentiment from Hugging Face
     sentiment_result = query_hf_api(sentiment_url, feeling_text)
 
     if sentiment_result and len(sentiment_result) > 0:
@@ -80,53 +61,45 @@ def analyze_checkin(happiness_level, feeling_text):
         sentiment_label = best_sentiment['label']
         confidence = best_sentiment['score']
     else:
-        sentiment_label = "LABEL_1"
+        sentiment_label = "neutral"
         confidence = 0.5
 
-    # Map labels
-    sentiment_map = {
-        "LABEL_0": "negative",
-        "LABEL_1": "neutral",
-        "LABEL_2": "positive"
-    }
-    sentiment_name = sentiment_map.get(sentiment_label, "neutral")
-
-    # Ask Gemini to create summary and recommendation
     prompt = f"""You're a warm, empathetic friend checking in on someone. They just shared how they're feeling.
 
-Their happiness level: {happiness_level}/10
-What they said: "{feeling_text}"
-Sentiment detected: {sentiment_name} (confidence: {confidence:.2f})
+    Their happiness level: {happiness_level}/10
+    What they said: '{feeling_text}'
+    Emotion detected: {sentiment_label} (confidence: {confidence:.2f})
+    
+    Write them two things:
+    1. A natural analysis of what they said and the emotion detected with its confidence level
+    2. A thoughtful suggestion that might help - something specific, not generic advice
+    
+    Note that the user cannot respond to you so assume that they can only read your advice.
+    
+    Be real. Be kind. Be human. No bullet points, no formality.
+    
+    Format exactly like this:
+    SUMMARY: [your empathetic response]
+    RECOMMENDATION: [your helpful suggestion]"""
 
-Write them two things:
-1. An natural analysis of what they said and the sentiment detected with its confidence level and name
-2. A thoughtful suggestion that might help - something specific, not generic advice
+    claude_response = ask_claude(prompt)
 
-Note that the user cannot respond to you so assume that they can only read your advice.
-
-Be real. Be kind. Be human. No bullet points, no formality.
-
-Format exactly like this:
-SUMMARY: [your empathetic response]
-RECOMMENDATION: [your helpful suggestion]"""
-
-    gemini_response = ask_gemini(prompt)
-
-    if gemini_response:
-        # Parse response
+    if claude_response:
         summary = ""
         recommendation = ""
 
-        for line in gemini_response.split('\n'):
-            if line.startswith("SUMMARY:"):
-                summary = line.replace("SUMMARY:", "").strip()
-            elif line.startswith("RECOMMENDATION:"):
-                recommendation = line.replace("RECOMMENDATION:", "").strip()
+        parts = claude_response.split("RECOMMENDATION:")
+        if len(parts) == 2:
+            recommendation = parts[1].strip()
+            summary_part = parts[0].split("SUMMARY:")
+            if len(summary_part) == 2:
+                summary = summary_part[1].strip()
 
-        return {
-            "summary": summary,
-            "recommendation": recommendation
-        }
+        if not summary and not recommendation:
+            print(f"Warning: Could not parse Claude response:\n{claude_response}")
+            return {"summary": claude_response, "recommendation": ""}
+
+        return {"summary": summary, "recommendation": recommendation}
 
     return {
         "summary": "Unable to generate summary",
@@ -140,50 +113,43 @@ def analyze_stability(checkins):
     if not checkins:
         return "Stability Score: N/A\nComment: No check-ins available for analysis."
 
-    # Basic stability calculation
     mood_levels = [c['happiness_level'] for c in checkins]
     avg_mood = sum(mood_levels) / len(mood_levels)
 
-    # Calculate how much moods vary
     variance = sum((mood - avg_mood) ** 2 for mood in mood_levels) / len(mood_levels)
     stability_score = max(1, min(10, 10 - variance))
 
-    # Prepare mood history
     mood_history = ", ".join([str(m) for m in mood_levels[:10]])
 
-    # Ask Gemini for insights
-    prompt = f"""You're a thoughtful therapist looking at someone's mood journal over time. Do not respond
-    to the person
+    prompt = f"""You're a thoughtful therapist looking at someone's mood journal over time.
 
 Their stability score: {stability_score:.1f}/10 (10 = very steady, 1 = lots of ups and downs)
 Average mood: {avg_mood:.1f}/10
 Recent moods: {mood_history}
 Total entries: {len(checkins)}
 
-Give them honest, compassionate insights. What patterns do you notice? What might help them? Be specific and encouraging. Write 2-3 sentences like you're talking to them directly."""
+Give honest, compassionate insights. What patterns do you notice? What might help them? Be specific and encouraging. Write 2-3 sentences talking to them directly."""
 
-    gemini_response = ask_gemini(prompt)
+    claude_response = ask_claude(prompt)
 
-    if gemini_response:
-        return f"Stability Score: {stability_score:.1f}/10\nComment: {gemini_response}"
+    if claude_response:
+        return f"Stability Score: {stability_score:.1f}/10\nComment: {claude_response}"
 
     return f"Stability Score: {stability_score:.1f}/10\nComment: Unable to generate analysis."
 
 
-# Test function to make sure everything works
 def test_api():
-    """Test the Hugging Face API connection"""
+    """Test all API connections"""
     print("Testing APIs...")
 
     if not HF_API_KEY:
-        print("No Hugging Face API key found! Add HUGGING_FACE_API_KEY to your .env file")
+        print("❌ No HUGGING_FACE_API_KEY found")
         return False
 
-    if not GEMINI_API_KEY:
-        print("No Gemini API key found! Add GEMINI_API_KEY to your .env file")
+    if not ANTHROPIC_API_KEY:
+        print("❌ No ANTHROPIC_API_KEY found")
         return False
 
-    # Test with simple text
     test_result = analyze_checkin(7, "I had a good day at work today!")
     print("✅ API test successful!")
     print("Sample analysis:", test_result)
