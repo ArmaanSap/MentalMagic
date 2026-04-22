@@ -36,7 +36,7 @@ def ask_gemini(prompt):
         print("❌ GEMINI_API_KEY is None or empty")
         return None
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -61,7 +61,7 @@ def ask_gemini(prompt):
 def analyze_checkin(happiness_level, feeling_text):
     """Analyze mood using free Hugging Face models"""
 
-    sentiment_url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+    sentiment_url = "https://router.huggingface.co/hf-inference/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
 
     # Get sentiment from Hugging Face
     sentiment_result = query_hf_api(sentiment_url, feeling_text)
